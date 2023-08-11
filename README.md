@@ -1,4 +1,4 @@
-<h2>SQL Injection(SQLi) Vulnerabilities </h2>
+<h2>SQL Injection(SQLi) ATTACK </h2>
 
 <b>SQL Attack queries to determine the number of COLUMNS, DATATYPES of the columns and VERSION on Oracle, Microsoft, MySQL and PostgreSQL</b>
 
