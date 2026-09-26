@@ -8,7 +8,7 @@ Detailed walkthrough of extracting an administrator's password through **blind S
 
 ## The scenario
 
-The application uses a `TrackingId` cookie in a SQL query but shows no results from it directly. It does, however, display a **"Welcome back"** message only when the query behaves normally. That single difference is enough to extract data one true/false answer at a time.
+The application uses a `TrackingId` cookie in a SQL query however shows no results from it directly. It does, however, display a **"Welcome back"** message only when the query behaves normally. That single difference is enough to extract data one true/false answer at a time.
 
 ---
 
